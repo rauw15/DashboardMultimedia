@@ -1,0 +1,11 @@
+fecha,producto,categoria,ventas,cantidad,region,cliente_id,precio_unitario,descuento,rating
+2024-01-01,Laptop,Electrónicos,1500.00,2,Norte,CLI001,750.00,0.10,4.5
+2024-01-02,Smartphone,Electrónicos,800.00,1,Sur,CLI002,800.00,0.00,4.8
+2024-01-03,Monitor,Electrónicos,300.00,1,Este,CLI003,300.00,0.05,4.2
+2024-01-04,Teclado,Accesorios,50.00,1,Oeste,CLI004,50.00,0.00,4.0
+2024-01-05,Mouse,Accesorios,30.00,2,Norte,CLI005,15.00,0.15,4.7
+2024-01-06,Tablet,Electrónicos,400.00,1,Sur,CLI006,400.00,0.00,4.3
+2024-01-07,Auriculares,Accesorios,100.00,1,Este,CLI007,100.00,0.10,4.6
+2024-01-08,Impresora,Electrónicos,200.00,1,Oeste,CLI008,200.00,0.00,4.1
+2024-01-09,Webcam,Accesorios,80.00,1,Norte,CLI009,80.00,0.05,4.4
+2024-01-10,Router,Electrónicos,120.00,1,Sur,CLI010,120.00,0.00,4.9 
