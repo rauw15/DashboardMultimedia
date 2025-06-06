@@ -1,106 +1,88 @@
+# app.py
 import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-import seaborn as sns
-import matplotlib.pyplot as plt
-from datetime import datetime
-import os
-from dotenv import load_dotenv
-from utils.data_loader import load_data
-from utils.filters import apply_filters
-from utils.plots import render_plots
-from utils.sampling import apply_sampling
-from utils.visualizations import create_visualization
-from utils.data_processing import process_data
+from utils.data_loader import load_data # Asumiendo que tienes esta función
+from utils.sampling import sample_data # Necesitarás crear este módulo/función
+from utils.filters import apply_filters_ui, get_filtered_df # Necesitarás crear este módulo/función
+from utils.plots import render_main_plot_ui, render_coupled_plot_ui
 
-# Configuración de la página
-st.set_page_config(
-    page_title="Dashboard de Análisis Exploratorio",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# --- Configuración de Página ---
+st.set_page_config(layout="wide", page_title="Dashboard Multimedia")
 
-# Título y descripción
-st.title("📊 Dashboard de Análisis Exploratorio")
-st.markdown("""
-    Esta aplicación permite cargar, explorar y visualizar datasets complejos con funcionalidades avanzadas
-    de filtrado, partición de datos y generación de visualizaciones dinámicas.
-""")
+# --- Carga de Datos ---
+st.sidebar.title("Panel de Control")
+uploaded_file = st.sidebar.file_uploader("Carga tu archivo CSV o Excel", type=["csv", "xlsx"])
 
-# Inicializar el estado de la sesión
-if 'df' not in st.session_state:
-    st.session_state.df = None
+if 'raw_df' not in st.session_state:
+    st.session_state.raw_df = None
+if 'sampled_df' not in st.session_state:
+    st.session_state.sampled_df = None
+if 'filtered_df' not in st.session_state:
+    st.session_state.filtered_df = None
 
-# Sidebar para carga de datos
-with st.sidebar:
-    st.header("📁 Carga de Datos")
-    data_source = st.radio(
-        "Seleccione la fuente de datos:",
-        ["Archivo Local", "MongoDB Atlas", "API REST"]
-    )
+if uploaded_file:
+    raw_df = load_data(uploaded_file)
+    if raw_df is not None:
+        st.session_state.raw_df = raw_df
+        st.session_state.sampled_df = raw_df # Inicialmente, muestreado es igual a raw
+        st.session_state.filtered_df = raw_df # Inicialmente, filtrado es igual a raw
+        st.sidebar.success("Archivo cargado exitosamente!")
+        st.sidebar.metric("Filas Totales", len(raw_df))
+    else:
+        st.sidebar.error("No se pudo cargar el archivo.")
+        st.session_state.raw_df = None # Resetear si falla la carga
+
+if st.session_state.raw_df is not None:
+    current_df_for_processing = st.session_state.raw_df
+
+    # --- Muestreo / Partición de Datos (utils/sampling.py) ---
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Muestreo / Partición")
+    # Aquí irían los controles para seleccionar el método de muestreo
+    # y st.session_state.sampled_df se actualizaría.
+    # Ejemplo:
+    # sampling_method = st.sidebar.selectbox("Método de Muestreo", ["Ninguno", "Aleatorio", "Estratificado", "Temporal"])
+    # if sampling_method != "Ninguno":
+    #     st.session_state.sampled_df = sample_data(st.session_state.raw_df, method=sampling_method, ...) # Implementar sample_data
+    # else:
+    #     st.session_state.sampled_df = st.session_state.raw_df
+    # current_df_for_processing = st.session_state.sampled_df
     
-    if data_source == "Archivo Local":
-        uploaded_file = st.file_uploader(
-            "Cargar archivo CSV/Parquet",
-            type=["csv", "parquet"],
-            accept_multiple_files=False
-        )
-    elif data_source == "MongoDB Atlas":
-        st.text_input("URI de MongoDB", type="password")
-        st.text_input("Nombre de la colección")
-    else:  # API REST
-        st.text_input("URL de la API")
-        st.text_input("API Key", type="password")
+    # Por ahora, asumimos que usamos el raw_df o el último df procesado
+    # Debes implementar la lógica de muestreo y actualizar current_df_for_processing
 
-# Función para cargar datos
-def load_dataset():
-    if data_source == "Archivo Local" and uploaded_file is not None:
-        try:
-            df = load_data(uploaded_file)
-            if df is not None:
-                st.session_state.df = df
-                st.success("¡Datos cargados exitosamente!")
-                st.write("Vista previa de los datos:")
-                st.dataframe(df.head())
-        except Exception as e:
-            st.error(f"Error al cargar los datos: {str(e)}")
+    # --- Filtrado Dinámico (utils/filters.py) ---
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Filtros Dinámicos")
+    # filter_configs = apply_filters_ui(current_df_for_processing) # apply_filters_ui devuelve los widgets y configuraciones
+    # if st.sidebar.button("Aplicar Filtros"):
+    #     st.session_state.filtered_df = get_filtered_df(current_df_for_processing, filter_configs)
+    # else:
+    #      # Si no se aplican filtros nuevos, usar el df procesado anteriormente (muestreado o raw)
+    #      st.session_state.filtered_df = current_df_for_processing 
+    # df_to_visualize = st.session_state.filtered_df
 
-# Botón para cargar datos
-if st.sidebar.button("Cargar Datos"):
-    load_dataset()
+    # Simplificación por ahora: usar el raw_df directamente
+    df_to_visualize = st.session_state.raw_df
 
-# Mostrar datos si están cargados
-if st.session_state.df is not None:
-    # Pestañas para diferentes funcionalidades
-    tab1, tab2, tab3 = st.tabs(["📈 Visualizaciones", "🔍 Análisis", "📤 Exportación"])
-    
-    with tab1:
-        st.header("Visualizaciones")
-        # Aplicar filtros
-        filtered_df = apply_filters(st.session_state.df)
+    if df_to_visualize is not None and not df_to_visualize.empty:
+        st.metric("Filas para Visualizar", len(df_to_visualize))
         
-        # Aplicar muestreo
-        sampled_df = apply_sampling(filtered_df)
-        
-        # Visualizaciones
-        render_plots(sampled_df)
-        
-    with tab2:
-        st.header("Análisis de Datos")
-        st.write("Estadísticas descriptivas:")
-        st.write(st.session_state.df.describe())
-        
-    with tab3:
-        st.header("Exportación")
-        if st.button("Exportar DataFrame a CSV"):
-            csv = st.session_state.df.to_csv(index=False)
-            st.download_button(
-                "Descargar CSV",
-                csv,
-                "datos_exportados.csv",
-                "text/csv",
-                key='download-csv'
-            )
+        # --- Renderizar Visualizaciones ---
+        # Opción 1: Una función que maneja ambas UIs
+        # render_all_visualizations_ui(df_to_visualize)
+
+        # Opción 2: Llamar a cada UI por separado
+        main_plot_container = st.container()
+        with main_plot_container:
+            render_main_plot_ui(df_to_visualize, st) # Pasamos 'st' como el contenedor
+
+        st.markdown("---") 
+
+        coupled_plot_container = st.container()
+        with coupled_plot_container:
+            render_coupled_plot_ui(df_to_visualize, st) # Pasamos 'st' como el contenedor
+            
+    elif st.session_state.raw_df is not None : # Hay datos cargados pero están vacíos después de filtrar/muestrear
+        st.warning("El conjunto de datos actual (después de filtros/muestreo) está vacío.")
+else:
+    st.info("Por favor, carga un archivo de datos para comenzar.")
